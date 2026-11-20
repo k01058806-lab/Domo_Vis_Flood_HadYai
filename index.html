@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>น้ำท่วมสูงสุด หาดใหญ่ 2568 · กรณีฝนเปลี่ยนแปลง</title>
+<style>
+  :root{--bg:rgba(14,22,36,.92);--fg:#e8eef7;--mute:#9fb0c8;--acc:#4fa3ff;--line:rgba(255,255,255,.12);--side:340px}
+  html,body{margin:0;height:100%;background:#0b1220;color:var(--fg);font:14px/1.45 system-ui,"Noto Sans Thai",sans-serif}
+  #map{position:absolute;inset:0}
+  .panel{position:absolute;z-index:10;background:var(--bg);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+  /* ---- left sidebar ---- */
+  #side{top:20vh;left:12px;height:60vh;width:var(--side);padding:14px 16px;overflow-y:auto;box-sizing:border-box}
+  #side h1{font-size:16px;margin:0 0 2px}
+  #side .sub{color:var(--mute);font-size:12px;margin-bottom:12px}
+  #side h2{font-size:13px;color:var(--mute);font-weight:600;margin:16px 0 8px;letter-spacing:.02em}
+  #cases{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  #cases button{padding:7px 4px;font-size:13px;line-height:1.2}
+  #cases button.base{grid-column:1/-1}
+  #cases button small{display:block;color:var(--mute);font-size:11px}
+  #cases button.on small{color:#04111f}
+  #cases button.na{opacity:.45}
+  button{background:#1d2b44;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 11px;font:inherit;cursor:pointer}
+  button:hover{border-color:var(--acc)}
+  button.on{background:var(--acc);color:#04111f;border-color:var(--acc)}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .kpi{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+  .kpi .l{color:var(--mute);font-size:11px}
+  .kpi .v{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+  .kpi .v small{font-size:12px;font-weight:400;color:var(--mute)}
+  .kpi.wide{grid-column:1/-1}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  td,th{padding:4px 2px;font-size:12.5px;text-align:right;white-space:nowrap}
+  th{color:var(--mute);font-weight:500;border-bottom:1px solid var(--line)}
+  td:first-child,th:first-child{text-align:left;white-space:normal}
+  tr+tr td{border-top:1px solid rgba(255,255,255,.05)}
+  .barcell{width:90px}
+  .rbar{height:7px;border-radius:4px;background:linear-gradient(90deg,#6ebef0,#2f78c8)}
+  .note{color:var(--mute);font-size:11.5px;margin-top:10px}
+  #na{display:none;margin-top:10px;padding:8px 10px;border-radius:8px;background:rgba(255,207,107,.1);border:1px solid rgba(255,207,107,.35);color:#ffcf6b;font-size:12.5px}
+  /* ---- colour bar top centre ---- */
+  #cbar{top:12px;left:calc(50% + var(--side)/2 + 6px);transform:translateX(-50%);padding:8px 14px 6px;text-align:center}
+  #cbar .t{font-size:12px;color:var(--mute);margin-bottom:5px}
+  #cbar .sw{display:flex}
+  #cbar .sw span{width:46px;height:12px}
+  #cbar .sw span:first-child{border-radius:6px 0 0 6px}
+  #cbar .sw span:last-child{border-radius:0 6px 6px 0}
+  #cbar .lb{display:flex;font-size:11px;color:var(--fg);font-variant-numeric:tabular-nums}
+  #cbar .lb span{width:46px;text-align:left;transform:translateX(-4px)}
+  /* ---- view controls bottom right ---- */
+  #view{right:12px;bottom:12px;padding:8px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:620px}
+  .hint{flex-basis:100%;color:var(--mute);font-size:11px}
+  label{color:var(--mute);display:flex;align-items:center;gap:6px}
+  input[type=range]{accent-color:var(--acc)}
+  #labels{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+  .clab{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:12.5px;font-weight:600;color:#fff;text-shadow:0 0 3px #000,0 0 6px #000,0 0 2px #000;pointer-events:auto;cursor:pointer}
+  .clab.hl{color:#ffcf6b}
+  tr.hl td{color:#ffcf6b}
+  #rTab tr{cursor:pointer}
+  #msg{position:absolute;z-index:11;left:50%;bottom:16px;transform:translateX(-50%);color:#ffcf6b;font-size:12.5px;background:var(--bg);border-radius:8px;padding:4px 10px;display:none}
+  #toggle{display:none}
+  @media (max-width:760px){
+    :root{--side:calc(100vw - 24px)}
+    #side{top:12px;height:auto;max-height:46vh}
+    #side.min{max-height:52px;overflow:hidden}
+    #toggle{display:inline-block;position:absolute;right:10px;top:10px;padding:2px 9px}
+    #cbar{top:auto;bottom:66px;left:50%}
+    #view{flex-wrap:wrap}
+    #view{left:12px;right:12px;max-width:none}
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<aside id="side" class="panel">
+  <button id="toggle" title="ย่อ/ขยาย">☰</button>
+  <h1>น้ำท่วมสูงสุด หาดใหญ่ 2568</h1>
+  <div class="sub">แบบจำลอง 2D (SWE-Flood2D FV2) · ฝน 15–30 พ.ย. 2568 · เลือกกรณีฝน</div>
+
+  <div id="cases"></div>
+  <div id="na">กรณีนี้ยังไม่มีผลการจำลอง</div>
+
+  <h2 id="caseTitle">ผลน้ำท่วม</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="l">พื้นที่น้ำท่วม (&gt;5 ซม.)</div><div class="v" id="kWet">–</div></div>
+    <div class="kpi"><div class="l">ลึกสุด</div><div class="v" id="kMax">–</div></div>
+    <div class="kpi"><div class="l">ลึก &gt;0.5 ม.</div><div class="v" id="kW50">–</div></div>
+    <div class="kpi"><div class="l">ลึก &gt;1 ม.</div><div class="v" id="kW100">–</div></div>
+  </div>
+
+  <h2>ฝนเฉลี่ยทุกลุ่มน้ำ</h2>
+  <div class="kpis">
+    <div class="kpi wide"><div class="l">ฝนสะสม 15–30 พ.ย. (ถ่วงตามพื้นที่ 1,825 ตร.กม.)</div><div class="v" id="rAll">–</div></div>
+    <div class="kpi"><div class="l">เฉลี่ย 16 วัน</div><div class="v" id="rDay">–</div></div>
+    <div class="kpi"><div class="l">เฉลี่ยช่วงฝนหนัก 19–26 พ.ย.</div><div class="v" id="rHeavy">–</div></div>
+  </div>
+
+  <h2>ฝนเฉลี่ยแต่ละลุ่มน้ำ (ต้นน้ำของจุดน้ำเข้า)</h2>
+  <table>
+    <thead><tr><th>ลุ่มน้ำ</th><th>ตร.กม.</th><th>สะสม มม.</th><th>มม./วัน</th><th class="barcell"></th></tr></thead>
+    <tbody id="rTab"></tbody>
+  </table>
+  <div class="note">ฝนเฉลี่ยพื้นที่จากสถานีโทรมาตร สสน. (HII) รายชั่วโมง แบบ Thiessen · กรณีอื่นเป็นฝนเดิม × (1 + %) · มม./วัน = ฝนสะสม ÷ 16 วัน</div>
+</aside>
+
+<div id="cbar" class="panel">
+  <div class="t">ความลึกน้ำท่วมสูงสุด (ม.)</div>
+  <div class="sw" id="cbsw"></div>
+  <div class="lb" id="cblb"></div>
+</div>
+
+<div id="view" class="panel">
+  <button id="v3d" class="on" title="สลับมุมมอง 3D / 2D">3D</button>
+  <button id="rot" title="หมุนกล้องรอบพื้นที่อัตโนมัติ">⟳ หมุน</button>
+  <label title="ความสูงของผิวน้ำเทียบความลึกจริง (1× = ความลึกจริง อาคารจะสูงกว่าน้ำ)">ความสูงน้ำ <input id="hs" type="range" min="1" max="10" value="2" style="width:70px"> <span id="hsv">2×</span></label>
+  <label><input id="cOn" type="checkbox" checked> ลุ่มน้ำ</label>
+  <label>ทึบ <input id="opa" type="range" min="10" max="100" value="80" style="width:60px"></label>
+  <button id="fitc" title="ดูลุ่มน้ำทั้งหมด">ลุ่มน้ำทั้งหมด</button>
+  <button id="home" title="กลับมุมมองพื้นที่น้ำท่วม">⌂</button>
+  <div class="hint">หมุน/เอียง: คลิกขวาลาก หรือ Ctrl+ลาก · มือถือ: สองนิ้วหมุน/ลากขึ้นลง</div>
+</div>
+<div id="labels"></div>
+<div id="msg"></div>
+
+<script src="scenarios.js"></script>
+<script src="catchments.js"></script>
+<script>
+(function(){
+/* ---------- Longdo Map API key ----------
+   ใส่ key ไว้ในโค้ด (ควรจำกัดโดเมนของ key ที่ map.longdo.com/console ให้เป็น <user>.github.io)
+   เปลี่ยนชั่วคราวได้ด้วย ?key=... ใน URL                                                    */
+const API_KEY = '04f028c2f8a0c41c78a862f7e22cfb7a';
+
+const S = window.SCENARIOS;
+const [W,Sb,E,N] = S.bounds, CX=(W+E)/2, CY=(Sb+N)/2;
+const $ = id => document.getElementById(id);
+const fmt = (x,d=0) => x.toLocaleString('th-TH',{minimumFractionDigits:d,maximumFractionDigits:d});
+let msgT; const msg = t => { const m=$('msg'); clearTimeout(msgT); m.textContent=t||''; m.style.display=t?'block':'none'; };
+
+/* ---------- colours (same breaks as the vector bands) ---------- */
+const BANDS = S.bands;                                   // [0.05,0.15,0.3,0.5,1,2,3]
+const COLS  = ['#a9dcf6','#6ebef0','#4a9fe0','#2f78c8','#1450af','#0a2878','#061a52'];
+const VCOL  = ['step',['get','d'],COLS[0]]; BANDS.slice(1).forEach((b,i)=>VCOL.push(b,COLS[i+1]));
+$('cbsw').innerHTML = COLS.map(c=>`<span style="background:${c}"></span>`).join('');
+$('cblb').innerHTML = BANDS.map((b,i)=>`<span>${i===BANDS.length-1?b+'+':b}</span>`).join('');
+
+/* ---------- state ---------- */
+let map, R, cur = 'base', opa = .8, cOn = true, hl = 0, is3d = true, hs = 2, rotating = false;
+const CA = window.CATCHMENTS;
+const vecCache = {};
+
+/* ---------- scenario buttons ---------- */
+const order = ['base','Rm90','Rm50','Rm25','Rm10','Rp10','Rp25','Rp50','Rp100'];
+const byId = Object.fromEntries(S.cases.map(c=>[c.id,c]));
+$('cases').innerHTML = order.map(id=>{ const c=byId[id];
+  const t = id==='base' ? `${c.label}<small>กรณีฐาน (ฝนจริง)</small>` : `${c.label}<small>${c.available?'':'ยังไม่มีผล'}</small>`;
+  return `<button data-id="${id}" class="${id==='base'?'base ':''}${c.available?'':'na'}">${t}</button>`; }).join('');
+document.querySelectorAll('#cases button').forEach(b=>b.onclick=()=>select(b.dataset.id));
+
+/* ---------- side panel content ---------- */
+function fill(c){
+  document.querySelectorAll('#cases button').forEach(b=>b.classList.toggle('on',b.dataset.id===c.id));
+  $('caseTitle').textContent = 'ผลน้ำท่วม · ' + c.label;
+  $('na').style.display = c.available ? 'none' : 'block';
+  const st = c.stats;
+  $('kWet').innerHTML  = st ? fmt(st.wet,1)+' <small>ตร.กม.</small>' : '–';
+  $('kMax').innerHTML  = st ? fmt(st.max,2)+' <small>ม.</small>' : '–';
+  $('kW50').innerHTML  = st ? fmt(st.wet50,1)+' <small>ตร.กม.</small>' : '–';
+  $('kW100').innerHTML = st ? fmt(st.wet100,1)+' <small>ตร.กม.</small>' : '–';
+  $('rAll').innerHTML   = fmt(c.rainAll)+' <small>มม.</small>';
+  $('rDay').innerHTML   = fmt(c.rainAllDay,1)+' <small>มม./วัน</small>';
+  $('rHeavy').innerHTML = fmt(c.rainHeavyDay,1)+' <small>มม./วัน</small>';
+  const mx = Math.max(...byId['Rp100'].rain);
+  $('rTab').innerHTML = S.catch.map((k,i)=>`<tr data-c="${i+1}"><td>${i+1} ${k.name}</td><td>${fmt(k.area,1)}</td><td>${fmt(c.rain[i])}</td>`+
+    `<td>${fmt(c.rain[i]/16,1)}</td><td class="barcell"><div class="rbar" style="width:${100*c.rain[i]/mx}%"></div></td></tr>`).join('');
+  document.querySelectorAll('#rTab tr').forEach(r=>r.classList.toggle('hl',+r.dataset.c===hl));
+}
+
+/* ---------- Longdo map ---------- */
+const key = new URLSearchParams(location.search).get('key') || API_KEY;
+const s = document.createElement('script');
+s.src = 'https://api.longdo.com/map3/?key=' + encodeURIComponent(key);
+s.onload = init; s.onerror = () => msg('โหลด Longdo Map SDK ไม่สำเร็จ (ตรวจ key / อินเทอร์เน็ต)');
+document.head.appendChild(s);
+
+function waitFor(test, ok, ms, fail){ const t0=Date.now(); (function p(){ let r=false; try{r=test()}catch(e){}
+  if(r) ok(); else if(Date.now()-t0>ms) fail&&fail(); else setTimeout(p,150); })(); }
+
+function init(){
+  map = new longdo.Map({ placeholder:$('map'), location:{lon:CX,lat:CY}, zoom:12.4, pitch:60 });
+  waitFor(()=>map.Renderer && map.Renderer.isStyleLoaded && map.Renderer.isStyleLoaded(), ()=>{
+    R = map.Renderer;
+    try{ R.dragRotate.enable(); R.touchZoomRotate.enableRotation(); R.touchPitch && R.touchPitch.enable(); R.keyboard && R.keyboard.enable(); }catch(e){}
+    home(false);
+    addLayers(); select(cur);
+    R.on('styledata', ()=>{ if(!R.getSource('flood')) { addLayers(); show(); } });
+    R.on('move', placeLabels); R.on('resize', placeLabels); placeLabels();
+  }, 20000, ()=>msg('แผนที่ยังไม่พร้อม – ตรวจ API key'));
+}
+function home(anim=true){
+  const pad = window.innerWidth>760 ? {left:parseInt(getComputedStyle(document.documentElement).getPropertyValue('--side'))+24,top:70,right:20,bottom:60} : 20;
+  let cam=null; try{ cam=R.cameraForBounds([[W,Sb],[E,N]],{padding:pad}); }catch(e){}
+  cam = cam || {center:[CX,CY],zoom:12.4};
+  const o = {center:cam.center, zoom:cam.zoom, pitch:is3d?60:0, bearing:is3d?-20:0};
+  anim ? R.flyTo({...o,duration:1500}) : R.jumpTo(o);
+}
+
+/* ---------- layers: flood under buildings & labels, catchment outlines ---------- */
+const EMPTY = {type:'FeatureCollection',features:[]};
+function beforeId(){                     // first building / 3D / label layer of the base map
+  const L = (R.getStyle().layers||[]);
+  const hit = L.find(l => l.type==='fill-extrusion' || l.type==='symbol' || /build|อาคาร/i.test(l.id+' '+(l['source-layer']||'')));
+  return hit ? hit.id : undefined;
+}
+function addLayers(){
+  if(R.getSource('flood')) return;
+  const b = beforeId();
+  R.addSource('flood',{type:'geojson',data:EMPTY,tolerance:0.2});
+  // 3D water: extrusion height = depth (m) x hs, placed under the base-map buildings,
+  // buildings (taller than the water) stand out of the water
+  R.addLayer({id:'flood',type:'fill-extrusion',source:'flood',paint:{'fill-extrusion-color':VCOL,'fill-extrusion-opacity':opa,
+             'fill-extrusion-height':0,'fill-extrusion-base':0,'fill-extrusion-vertical-gradient':false,
+             'fill-extrusion-height-transition':{duration:500}}}, b);
+  R.addSource('catch',{type:'geojson',data:{type:'FeatureCollection',features:CA.features}});
+  R.addLayer({id:'catch-fill',type:'fill',source:'catch',paint:{'fill-color':'#ffb84d','fill-opacity':['case',['==',['get','id'],hl],0.12,0]}}, b);
+  R.addLayer({id:'catch-line',type:'line',source:'catch',paint:{'line-color':'#ff9f1c','line-width':['case',['==',['get','id'],hl],3,1.6],
+             'line-dasharray':[3,1.5],'line-opacity':0.95}}, b);
+  style();
+}
+function style(){
+  if(!R || !R.getLayer('flood')) return;
+  R.setPaintProperty('flood','fill-extrusion-opacity',opa);
+  R.setPaintProperty('flood','fill-extrusion-height', is3d ? ['*',['get','d'],hs] : 0);
+  ['catch-fill','catch-line'].forEach(l=>R.setLayoutProperty(l,'visibility',cOn?'visible':'none'));
+  R.setPaintProperty('catch-fill','fill-opacity',['case',['==',['get','id'],hl],0.12,0]);
+  R.setPaintProperty('catch-line','line-width',['case',['==',['get','id'],hl],3,1.6]);
+  placeLabels();
+}
+/* ---------- catchment name labels (HTML, always readable Thai) ---------- */
+$('labels').innerHTML = CA.labels.map(l=>`<div class="clab" data-c="${l.id}">${l.id}. ${l.name}</div>`).join('');
+const labEls = [...document.querySelectorAll('.clab')];
+function placeLabels(){
+  if(!R) return;
+  labEls.forEach((el,i)=>{ const l=CA.labels[i];
+    if(!cOn){ el.style.display='none'; return; }
+    const p=R.project([l.lon,l.lat]); el.style.display='block';
+    el.style.left=p.x+'px'; el.style.top=p.y+'px'; el.classList.toggle('hl',l.id===hl); });
+}
+function setHL(id){ hl=id; style(); document.querySelectorAll('#rTab tr').forEach(r=>r.classList.toggle('hl',+r.dataset.c===id)); }
+function fitCatch(id){
+  const fs = id ? CA.features.filter(f=>f.properties.id===id) : CA.features;
+  let w=180,s=90,e=-180,n=-90;
+  fs.forEach(f=>f.geometry.coordinates.forEach(p=>p[0].forEach(([x,y])=>{w=Math.min(w,x);e=Math.max(e,x);s=Math.min(s,y);n=Math.max(n,y);})));
+  const pad = window.innerWidth>760 ? {left:parseInt(getComputedStyle(document.documentElement).getPropertyValue('--side'))+30,top:80,right:30,bottom:70} : 30;
+  R.fitBounds([[w,s],[e,n]],{padding:pad,pitch:is3d?45:0,bearing:R.getBearing(),duration:1200});
+}
+labEls.forEach(el=>{ el.onclick=()=>{ const id=+el.dataset.c; setHL(hl===id?0:id); }; });
+$('rTab').addEventListener('click',e=>{ const tr=e.target.closest('tr'); if(!tr||!R) return; const id=+tr.dataset.c; setHL(id); fitCatch(id); });
+function loadVec(id){
+  return new Promise((ok,no)=>{
+    if(vecCache[id]) return ok(vecCache[id]);
+    if(window.FLOOD_VEC && window.FLOOD_VEC[id]) return ok(vecCache[id]=window.FLOOD_VEC[id]);
+    const t=document.createElement('script'); t.src='vec/flood_'+id+'.js';
+    t.onload=()=> (window.FLOOD_VEC&&window.FLOOD_VEC[id]) ? ok(vecCache[id]=window.FLOOD_VEC[id]) : no('ไฟล์ว่าง');
+    t.onerror=()=>no('ไม่พบ vec/flood_'+id+'.js');
+    document.head.appendChild(t);
+  });
+}
+function show(){
+  if(!R || !R.getSource('flood')) return;
+  const c = byId[cur];
+  if(!c.available){ R.getSource('flood').setData(EMPTY); return; }
+  msg('กำลังโหลดแผนที่น้ำท่วม…');
+  loadVec(cur).then(fc=>{ if(cur!==c.id) return; R.getSource('flood').setData(fc); msg(''); })
+              .catch(e=>msg('โหลด vector ไม่ได้: '+e));
+}
+function select(id){ cur=id; fill(byId[id]); show(); }
+
+/* ---------- controls ---------- */
+$('cOn').onchange = e=>{ cOn=e.target.checked; style(); };
+$('opa').oninput  = e=>{ opa=e.target.value/100; style(); };
+$('fitc').onclick = ()=>R&&fitCatch(0);
+$('hs').oninput = e=>{ hs=+e.target.value; $('hsv').textContent=hs+'×'; style(); };
+$('v3d').onclick = ()=>{ is3d=!is3d; $('v3d').classList.toggle('on',is3d); $('v3d').textContent=is3d?'3D':'2D'; style();
+  if(R) R.easeTo({pitch:is3d?60:0, bearing:is3d?R.getBearing():0, duration:800}); };
+$('rot').onclick = ()=>{ rotating=!rotating; $('rot').classList.toggle('on',rotating); if(rotating) spin(); else R&&R.stop(); };
+function spin(){ if(!rotating||!R) return; R.rotateTo(R.getBearing()+40,{duration:5000,easing:t=>t}); R.once('moveend',()=>rotating&&spin()); }
+$('home').onclick = ()=>R&&home();
+$('toggle').onclick = ()=>$('side').classList.toggle('min');
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'&&e.target.type!=='range') return;
+  const i=order.indexOf(cur);
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault(); select(order[(i+1)%order.length]);}
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault(); select(order[(i-1+order.length)%order.length]);}
+});
+fill(byId[cur]); setHL(0);
+})();
+</script>
+</body>
+</html>
